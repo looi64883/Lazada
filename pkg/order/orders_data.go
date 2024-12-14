@@ -37,11 +37,11 @@ func ProcessOrders(responseData string) {
 	})
 
 	// Convert to JSON for use or storage
-	generalizedJSON, err := json.MarshalIndent(generalizedOrders, "", "  ")
+	_, err := json.MarshalIndent(generalizedOrders, "", "  ")
 	if err != nil {
 		log.Fatalf("Error marshalling generalized orders: %v", err)
 	}
 
-	log.Println("Generalized JSON:")
-	log.Println(string(generalizedJSON))
+	// log.Println("Generalized JSON:")
+	// log.Println(string(generalizedJSON))
 }
