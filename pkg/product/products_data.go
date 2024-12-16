@@ -7,12 +7,12 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-func ProcessProducts(responseData string) {
+func ProcessProducts(responseData string) string {
 	// Parse the response data to get products
 	products := gjson.Get(responseData, "products")
 	if !products.Exists() {
 		log.Println("No products found in response.")
-		return
+		return "No Products Found"
 	}
 
 	// Slice to hold the generalized JSON
@@ -45,4 +45,6 @@ func ProcessProducts(responseData string) {
 
 	log.Println("Generalized JSON:")
 	log.Println(string(generalizedJSON))
+
+	return string(generalizedJSON)
 }

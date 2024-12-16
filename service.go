@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"lazada/iop-sdk-go/iop"
+	"lazada/pkg/order"
+	"lazada/pkg/product"
 
 	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
@@ -22,6 +24,14 @@ type Task struct {
 	Limit  int
 }
 
+type WorkerConfig struct {
+	ClientOptions iop.ClientOptions
+	AccessToken   string
+	CreatedAfter  string
+	Endpoint      string
+	ProcessFunc   func(string) string
+}
+
 func main() {
 	e := echo.New()
 
@@ -35,10 +45,10 @@ func main() {
 
 	// Define the POST endpoints
 	e.POST("/process-products", func(c echo.Context) error {
-		return handleProcessing(c, "/products/get", "total_products")
+		return handleProcessing(c, "/products/get", "total_products", product.ProcessProducts)
 	})
 	e.POST("/process-orders", func(c echo.Context) error {
-		return handleProcessing(c, "/orders/get", "countTotal")
+		return handleProcessing(c, "/orders/get", "countTotal", order.ProcessOrders)
 	})
 
 	// Start the server
@@ -46,7 +56,7 @@ func main() {
 	e.Logger.Fatal(e.Start(":8091"))
 }
 
-func handleProcessing(c echo.Context, endpoint, countKey string) error {
+func handleProcessing(c echo.Context, endpoint, countKey string, processFunc func(string) string) error {
 	// Bind the request payload
 	payload := new(RequestPayload)
 	if err := c.Bind(payload); err != nil {
@@ -71,6 +81,9 @@ func handleProcessing(c echo.Context, endpoint, countKey string) error {
 	client := iop.NewClient(&clientOptions)
 	client.SetAccessToken(payload.AccessToken)
 
+	// Get total order count
+	client.AddAPIParam("created_after", payload.CreatedAfter)
+
 	// Get total count
 	totalCount, err := getTotalCount(client, endpoint, countKey)
 	if err != nil {
@@ -91,7 +104,14 @@ func handleProcessing(c echo.Context, endpoint, countKey string) error {
 	// Start worker goroutines
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go worker(clientOptions, payload.AccessToken, payload.CreatedAfter, tasks, results, &wg, endpoint)
+		config := WorkerConfig{
+			ClientOptions: clientOptions,
+			AccessToken:   payload.AccessToken,
+			CreatedAfter:  payload.CreatedAfter,
+			Endpoint:      endpoint,
+			ProcessFunc:   processFunc,
+		}
+		go worker(config, tasks, results, &wg, endpoint)
 	}
 
 	// Send tasks to the worker pool
@@ -124,13 +144,14 @@ func getTotalCount(client *iop.IopClient, endpoint, countKey string) (int, error
 	return int(gjson.Get(response, countKey).Int()), nil
 }
 
-func worker(clientOptions iop.ClientOptions, accessToken string, createdAfter string, tasks <-chan Task, results chan<- string, wg *sync.WaitGroup, endpoint string) {
+func worker(config WorkerConfig, tasks <-chan Task, results chan<- string, wg *sync.WaitGroup, endpoint string) {
 	defer wg.Done()
+	log.Printf(config.CreatedAfter)
 
 	for task := range tasks {
-		client := iop.NewClient(&clientOptions)
-		client.SetAccessToken(accessToken)
-		client.AddAPIParam("created_after", createdAfter)
+		client := iop.NewClient(&config.ClientOptions)
+		client.SetAccessToken(config.AccessToken)
+		client.AddAPIParam("created_after", config.CreatedAfter)
 		client.AddAPIParam("offset", fmt.Sprintf("%d", task.Offset))
 		client.AddAPIParam("limit", fmt.Sprintf("%d", task.Limit))
 
@@ -140,6 +161,9 @@ func worker(clientOptions iop.ClientOptions, accessToken string, createdAfter st
 			continue
 		}
 
-		results <- string(getResult.Data)
+		// Process the fetched data using the provided ProcessFunc
+		processedData := config.ProcessFunc(string(getResult.Data))
+
+		results <- processedData
 	}
 }

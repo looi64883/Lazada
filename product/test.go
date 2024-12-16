@@ -66,6 +66,8 @@ func handleProductProcessing(c echo.Context) error {
 	// Lazada client configuration
 	client := iop.NewClient(&clientOptions)
 	client.SetAccessToken(payload.AccessToken)
+	// Get total order count
+	client.AddAPIParam("created_after", payload.CreatedAfter)
 
 	// Get total product count
 	totalProducts, err := getTotalProductCount(client)
