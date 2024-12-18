@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	clientID     = "131151"                           // Your Lazada App Key
-	clientSecret = "pA96smss38jIXWepIxl34VtfVMaDrChx" // Your Lazada App Secret
-	redirectURI  = "https://vemp.onrender.com/"       // The redirect URI you specified in Lazada settings
+	clientID     = "131151"                                    // Your Lazada App Key
+	clientSecret = "pA96smss38jIXWepIxl34VtfVMaDrChx"          // Your Lazada App Secret
+	redirectURI  = "https://lazada-jy7v.onrender.com/callback" // The redirect URI you specified in Lazada settings
 )
 
 func main() {
