@@ -51,7 +51,7 @@ func getAccessToken(code string) (string, error) {
 	clientOptions := iop.ClientOptions{
 		APIKey:    clientID,
 		APISecret: clientSecret,
-		Region:    "MY", // Use the region corresponding to your account (e.g., MY for Malaysia)
+		// Region:    "MY", // Use the region corresponding to your account (e.g., MY for Malaysia)
 	}
 
 	client := iop.NewClient(&clientOptions)
