@@ -58,7 +58,7 @@ func getAccessToken(code string) (string, error) {
 	client.AddAPIParam("code", code)
 
 	// Step 2: Call the API to exchange the code for an access token
-	getResult, err := client.Execute("/auth/token/create", "GET", nil)
+	getResult, err := client.Execute("/auth/token/create", "POST", nil)
 	if err != nil {
 		log.Printf("error exchanging code for access token: %v", err)
 		return "", err
